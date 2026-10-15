@@ -1,11 +1,14 @@
 # /// script
 # requires-python = ">=3.14"
-# dependencies = ["alpaca-py", "cryptography"]
+# dependencies = ["alpaca-py", "cryptography", "requests", "yfinance"]
 # ///
 """Builds the portfolio dashboard website from the Alpaca PAPER account.
 
     uv run --python 3.14 dashboard.py                  # writes site/ with password-locked data (needs DASHBOARD_PASSWORD)
     uv run --python 3.14 dashboard.py --no-password    # writes unlocked data, for looking at it on your own PC only
+
+It also runs the bot's crossover check (same settings and code as crossover_bot.py, but it never trades)
+so the page can list the stocks that crossed recently.
 
 The page itself is dashboard/index.html. This script copies it to site/ next to a data.json holding the
 account numbers. GitHub Pages sites can be opened by anyone with the link, so data.json is encrypted with
@@ -28,24 +31,11 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+import crossover_bot as bot
+
 HERE = Path(__file__).parent
-ENV_FILE = Path.home() / ".alpaca" / "alpaca.env"
 PAGE = HERE / "dashboard" / "index.html"
 PBKDF2_ITERATIONS = 310_000  # the page reads this from data.json
-
-
-def load_keys():
-    """Same as crossover_bot.py: GitHub secrets, or ~/.alpaca/alpaca.env on your own PC."""
-    if ENV_FILE.exists():
-        for line in ENV_FILE.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    key, secret = os.environ.get("ALPACA_API_KEY"), os.environ.get("ALPACA_SECRET_KEY")
-    if not key or not secret:
-        raise SystemExit("Missing ALPACA_API_KEY / ALPACA_SECRET_KEY")
-    return key, secret
 
 
 def num(x):
@@ -99,13 +89,64 @@ def history(client, period, timeframe):
     return [{"t": t, "equity": float(e)} for t, e in points]
 
 
-def build_data(client):
+def crossover_scan(key, secret, held, lookback=5):
+    """Stocks whose short average crossed the long one in the last `lookback` trading days."""
+    cfg = bot.load_config()
+    symbols, universe = None, None
+    if cfg["top_market_cap"]:
+        try:
+            symbols = bot.top_by_market_cap(cfg["top_market_cap"])
+            universe = f"top {len(symbols)} US stocks by market cap"
+        except Exception as e:
+            print(f"Could not download the market cap list ({e}). Using the symbols list instead.")
+    if not symbols:
+        symbols = list(dict.fromkeys(sym.strip().upper() for sym in cfg["symbols"]))
+        universe = f"{len(symbols)} stock(s) from config.toml"
+    short_n, long_n = cfg["short_period"], cfg["long_period"]
+    closes = bot.get_all_closes(symbols, cfg["history_days"], key, secret)
+
+    signals, checked, above, as_of = [], 0, 0, None
+    for sym in symbols:
+        c = closes.get(sym)
+        if c is None or len(c) < long_n + 1:
+            continue
+        checked += 1
+        short_ma, long_ma = c.rolling(short_n).mean(), c.rolling(long_n).mean()
+        diff = (short_ma - long_ma).iloc[-(lookback + 1):]
+        above += diff.iloc[-1] > 0
+        as_of = max(as_of or "", c.index[-1].strftime("%Y-%m-%d"))
+        for i in range(len(diff) - 1, 0, -1):  # newest crossover first
+            prev, cur = diff.iloc[i - 1], diff.iloc[i]
+            if prev != prev:  # NaN: not enough history this far back
+                break
+            if prev <= 0 < cur or prev >= 0 > cur:
+                signals.append({
+                    "symbol": sym, "signal": "BUY" if cur > 0 else "SELL",
+                    "date": diff.index[i].strftime("%Y-%m-%d"), "days_ago": len(diff) - 1 - i,
+                    "close": float(c.iloc[-1]), "short": float(short_ma.iloc[-1]), "long": float(long_ma.iloc[-1]),
+                    "gap_pct": float((short_ma.iloc[-1] / long_ma.iloc[-1] - 1) * 100),
+                    "held": sym in held,
+                })
+                break
+    signals.sort(key=lambda s: (s["days_ago"], s["symbol"]))
+    print(f"Crossover scan: {checked} stock(s) checked, {len(signals)} crossed in the last {lookback} trading days.")
+    return {"universe": universe, "checked": checked, "above": int(above), "short": short_n, "long": long_n,
+            "lookback": lookback, "as_of": as_of, "signals": signals}
+
+
+def build_data(client, key, secret):
     acct = client.get_account()
     positions = client.get_all_positions()
     orders = all_filled_orders(client)
     trades = closed_trades(orders)
     daily = history(client, "1A", "1D")
     intraday = history(client, "1D", "5Min")
+
+    try:  # the dashboard still publishes if the price download fails
+        scan = crossover_scan(key, secret, {p.symbol for p in positions})
+    except Exception as e:
+        print(f"Crossover scan failed: {e}")
+        scan = {"error": str(e)}
 
     equity, last_equity = float(acct.equity), float(acct.last_equity)
     start = daily[0]["equity"] if daily else equity
@@ -137,6 +178,7 @@ def build_data(client):
             "price": float(o.filled_avg_price), "time": o.filled_at.isoformat(),
         } for o in orders[::-1][:50]],
         "history": {"daily": daily, "intraday": intraday},
+        "crossovers": scan,
     }
 
 
@@ -158,8 +200,8 @@ def main():
     if not args.no_password and not password:
         raise SystemExit("Missing DASHBOARD_PASSWORD. Add it as a repository secret (see README).")
 
-    key, secret = load_keys()
-    data = build_data(TradingClient(key, secret, paper=True))
+    key, secret = bot.load_keys()
+    data = build_data(TradingClient(key, secret, paper=True), key, secret)
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

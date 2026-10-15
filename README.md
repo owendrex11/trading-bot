@@ -25,5 +25,8 @@ and the page asks for it before showing anything. One-time setup:
 3. Actions > Dashboard > Run workflow. When it finishes, the website address is shown on the run page
    (it looks like `https://owendrex11.github.io/trading-bot/`).
 
+The page also lists the stocks whose 20-day average crossed the 50-day in the last 5 trading days. It runs the
+bot's own check with the same `config.toml` settings, but never places orders.
+
 Win rate counts finished trades: each sell is matched with the oldest shares bought before it, and it is
 a win if it sold for more than it cost.
