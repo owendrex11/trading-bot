@@ -1,7 +1,11 @@
 # Settings for crossover_bot.py. Change these and save; the next run uses them.
 
-# Stocks to check. Add more inside the brackets, each in quotes, separated by commas,
-# for example: symbols = ["AAPL", "MSFT", "NVDA"]
+# Follow the largest US stocks by market cap. The list is downloaded fresh on every run.
+# Set to 0 to use your own symbols list below instead.
+top_market_cap = 1000
+
+# Your own list, used when top_market_cap is 0 (or if the market cap list can't be downloaded).
+# Each ticker in quotes, separated by commas, for example: symbols = ["AAPL", "MSFT", "NVDA"]
 symbols = ["AAPL"]
 
 short_period = 20      # fast moving average, in trading days
