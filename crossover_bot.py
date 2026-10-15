@@ -194,7 +194,7 @@ def main():
     short_n, long_n = cfg["short_period"], cfg["long_period"]
     all_closes = get_all_closes(symbols, cfg["history_days"], key, secret)
     verbose = len(symbols) <= 10
-    no_data, signals, failed = [], [], []
+    no_data, signals, failed, too_pricey = [], [], [], []
     for symbol in symbols:
         closes = all_closes.get(symbol)
         if closes is None or len(closes) < long_n + 1:
@@ -213,7 +213,8 @@ def main():
             continue
         signals.append(f"{signal} {symbol}")
         try:
-            act_on_signal(client, symbol, signal, float(closes.iloc[-1]), cfg, args.dry_run)
+            if act_on_signal(client, symbol, signal, float(closes.iloc[-1]), cfg, args.dry_run) == "too pricey":
+                too_pricey.append(symbol)
         except Exception as e:  # one bad order shouldn't stop the others
             print(f"Error placing order for {symbol}: {e}")
             failed.append(symbol)
@@ -223,6 +224,8 @@ def main():
     if no_data:
         summary += f" Skipped {len(no_data)} without enough price history"
         summary += f" ({', '.join(no_data[:20])}{'...' if len(no_data) > 20 else ''})."
+    if too_pricey:
+        summary += f" Not enough cash to buy: {', '.join(too_pricey)}."
     if failed:
         summary += f" Order errors: {', '.join(failed)}."
     print("\n" + summary)
@@ -251,6 +254,10 @@ def act_on_signal(client, symbol, signal, price, cfg, dry_run):
     if signal == "BUY":
         qty = buy_quantity(price, cfg)
         what = f"{qty} {symbol} (about ${qty * price:,.2f} at ${price:,.2f})"
+        cash = float(client.get_account().buying_power)
+        if qty * price > cash:  # e.g. one BRK.A share costs more than the whole account
+            print(f"Not enough buying power (${cash:,.2f}) to buy {what}. Skipping.")
+            return "too pricey"
     else:
         try:
             qty = float(client.get_open_position(symbol).qty)
