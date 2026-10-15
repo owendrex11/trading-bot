@@ -21,6 +21,7 @@ Rules:
 import argparse
 import math
 import os
+import time as clock_time
 import tomllib
 from datetime import datetime, time, timedelta
 from pathlib import Path
@@ -194,7 +195,7 @@ def main():
     short_n, long_n = cfg["short_period"], cfg["long_period"]
     all_closes = get_all_closes(symbols, cfg["history_days"], key, secret)
     verbose = len(symbols) <= 10
-    no_data, signals, failed, too_pricey = [], [], [], []
+    no_data, signals, failed, too_pricey, submitted = [], [], [], [], []
     for symbol in symbols:
         closes = all_closes.get(symbol)
         if closes is None or len(closes) < long_n + 1:
@@ -213,8 +214,11 @@ def main():
             continue
         signals.append(f"{signal} {symbol}")
         try:
-            if act_on_signal(client, symbol, signal, float(closes.iloc[-1]), cfg, args.dry_run) == "too pricey":
+            result = act_on_signal(client, symbol, signal, float(closes.iloc[-1]), cfg, args.dry_run)
+            if result == "too pricey":
                 too_pricey.append(symbol)
+            elif result is not None:
+                submitted.append(result)
         except Exception as e:  # one bad order shouldn't stop the others
             print(f"Error placing order for {symbol}: {e}")
             failed.append(symbol)
@@ -228,6 +232,7 @@ def main():
         summary += f" Not enough cash to buy: {', '.join(too_pricey)}."
     if failed:
         summary += f" Order errors: {', '.join(failed)}."
+    wait_for_fills(client, submitted)  # so the dashboard, which runs right after, sees every fill
     print("\n" + summary)
     if os.environ.get("GITHUB_ACTIONS"):
         print(f"::notice title=Crossover bot::{summary}")  # shows on the run's summary page
@@ -274,6 +279,25 @@ def act_on_signal(client, symbol, signal, price, cfg, dry_run):
 
     order = client.submit_order(MarketOrderRequest(symbol=symbol, qty=qty, side=side, time_in_force=TimeInForce.DAY))
     print(f"Submitted: {order.side.value} {what} (market) status={order.status.value} id={order.id}")
+    return order.id
+
+
+def wait_for_fills(client, order_ids, max_seconds=120):
+    """Wait until the orders placed this run are finished (filled, canceled...), at most max_seconds."""
+    pending = set(order_ids)
+    deadline = clock_time.monotonic() + max_seconds
+    while pending and clock_time.monotonic() < deadline:
+        clock_time.sleep(5)
+        for order_id in list(pending):
+            try:
+                if client.get_order_by_id(order_id).status.value not in ("new", "accepted", "pending_new", "partially_filled"):
+                    pending.discard(order_id)
+            except APIError:
+                pending.discard(order_id)
+    if pending:
+        print(f"{len(pending)} order(s) still not filled after {max_seconds} seconds. The dashboard will catch up next run.")
+    elif order_ids:
+        print(f"All {len(order_ids)} order(s) finished.")
 
 if __name__ == "__main__":
     main()
