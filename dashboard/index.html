@@ -16,6 +16,7 @@
     --hero-1: #0b1f4d; --hero-2: #1e4fd8; --hero-3: #3b82f6;
     --gain: #0f8a4f; --gain-soft: #e3f6ec; --loss: #d23a33; --loss-soft: #fdeaea;
     --shadow: 0 1px 2px rgba(15,27,45,.04), 0 6px 20px rgba(15,27,45,.06);
+    --ma1: #e08a0b; --ma2: #8b5cf6;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -25,6 +26,7 @@
       --hero-1: #081633; --hero-2: #143a9e; --hero-3: #2563eb;
       --gain: #3ccf86; --gain-soft: #0f2d20; --loss: #ff6b63; --loss-soft: #351717;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+      --ma1: #fbbf24; --ma2: #a78bfa;
     }
   }
   :root[data-theme="dark"] {
@@ -34,6 +36,7 @@
     --hero-1: #081633; --hero-2: #143a9e; --hero-3: #2563eb;
     --gain: #3ccf86; --gain-soft: #0f2d20; --loss: #ff6b63; --loss-soft: #351717;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    --ma1: #fbbf24; --ma2: #a78bfa;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -109,9 +112,42 @@
   th:first-child, td:first-child { text-align: left; }
   tbody tr:last-child td { border-bottom: 0; }
   tbody tr:hover td { background: var(--surface-2); }
-  .tick { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
-  .tick .badge { width: 30px; height: 30px; border-radius: 8px; background: var(--blue-soft); color: var(--blue-ink); display: grid;
-                 place-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: -.2px; }
+  .tick { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600; color: var(--text); background: none;
+          border: 0; padding: 0; cursor: pointer; text-align: left; }
+  .tick:hover .sym { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .badge { width: 30px; height: 30px; border-radius: 8px; background: var(--blue-soft); color: var(--blue-ink); display: grid; flex: none;
+           place-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: -.2px; overflow: hidden; }
+  .badge.img { background: #fff; box-shadow: inset 0 0 0 1px var(--border); }
+  .badge img { width: 78%; height: 78%; object-fit: contain; }
+  .badge.lg { width: 44px; height: 44px; border-radius: 12px; font-size: 13px; }
+
+  /* Stock chart window */
+  .modal { position: fixed; inset: 0; background: rgba(8,15,30,.55); backdrop-filter: blur(3px); display: grid; place-items: center;
+           padding: 16px; z-index: 50; }
+  .sheet { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.35);
+           width: 100%; max-width: 860px; max-height: calc(100vh - 32px); overflow: auto; padding: 20px; }
+  .sheet-head { display: flex; align-items: center; gap: 12px; }
+  .sheet-head .name { font-size: 20px; font-weight: 700; }
+  .sheet-head .price { margin-left: auto; text-align: right; }
+  .sheet-head .price b { font-size: 20px; display: block; }
+  .sheet-head .side, .sheet-head .own { white-space: nowrap; }
+  @media (max-width: 560px) {
+    .sheet { padding: 16px; }
+    .sheet-head { flex-wrap: wrap; }
+    .sheet-head .x { order: 2; margin-left: auto; }
+    .sheet-head .price { order: 3; flex-basis: 100%; text-align: left; margin: 4px 0 0; }
+    .sheet-head .price b { display: inline; margin-right: 8px; }
+  }
+  .x { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); width: 34px; height: 34px; border-radius: 10px;
+       cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
+  .sheet-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin: 16px 0 8px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .legend .mk { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid var(--gain); border-radius: 0; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+  .fact { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+  .fact .k { font-size: 12px; color: var(--muted); } .fact .v { font-weight: 600; margin-top: 2px; }
+  body.noscroll { overflow: hidden; }
   .delta { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 13px; }
   .delta.gain { background: var(--gain-soft); } .delta.loss { background: var(--loss-soft); }
   .side { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
@@ -214,8 +250,25 @@
         <div class="table-wrap" id="orders"></div>
       </section>
     </div>
-    <footer>Alpaca paper trading · not real money</footer>
+    <footer>Alpaca paper trading · not real money · tap any stock to see its chart</footer>
   </main>
+</div>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="mName">
+  <div class="sheet">
+    <div class="sheet-head">
+      <span id="mLogo"></span>
+      <div><div class="name" id="mName"></div><div class="sub" id="mSub"></div></div>
+      <div class="price num" id="mPrice"></div>
+      <button class="x" id="mClose" aria-label="Close">×</button>
+    </div>
+    <div class="sheet-bar">
+      <div class="legend" id="mLegend"></div>
+      <div class="seg" id="mRange"><button data-n="63">3M</button><button data-n="126" class="on">6M</button><button data-n="252">1Y</button></div>
+    </div>
+    <div class="chart" id="mChart"><div class="tip" id="mTip"></div></div>
+    <div class="facts" id="mFacts"></div>
+  </div>
 </div>
 
 <script>
@@ -240,7 +293,13 @@ const date = s => new Date(s).toLocaleDateString(undefined, { month: "short", da
 const shortDate = s => new Date(s + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const dateTime = s => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const tick = (sym, extra = "") => `<span class="tick"><span class="badge">${esc(sym.slice(0, 4))}</span>${esc(sym)}${extra}</span>`;
+const badge = (sym, size = "") => {
+  const file = data && data.logos && data.logos[sym];
+  return file
+    ? `<span class="badge img ${size}"><img src="logos/${file}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('img');this.parentNode.textContent='${esc(sym.slice(0, 4))}'"></span>`
+    : `<span class="badge ${size}">${esc(sym.slice(0, 4))}</span>`;
+};
+const tick = (sym, extra = "") => `<button class="tick" data-sym="${esc(sym)}" title="Open ${esc(sym)} chart">${badge(sym)}<span class="sym">${esc(sym)}</span>${extra}</button>`;
 
 const ICONS = {
   trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>',
@@ -379,6 +438,125 @@ function renderCrossovers(x) {
     <p class="sub" style="margin:12px 0 0">Stocks whose ${x.short}-day average crossed the ${x.long}-day in the last ${x.lookback} trading days. The bot buys on the day of a buy cross and only sells stocks it owns.</p>`;
 }
 
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-sym]");
+  if (t) openStock(t.dataset.sym);
+});
+$("mClose").addEventListener("click", closeStock);
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) closeStock(); });
+addEventListener("keydown", e => { if (e.key === "Escape") closeStock(); });
+$("mRange").addEventListener("click", e => {
+  const n = e.target.dataset.n;
+  if (!n) return;
+  stockDays = +n;
+  [...$("mRange").children].forEach(b => b.classList.toggle("on", b.dataset.n === n));
+  drawStock();
+});
+
+let stock = null, stockDays = 126;
+const avg = (arr, n) => arr.map((_, i) => {
+  if (i < n - 1) return null;
+  let s = 0;
+  for (let j = i - n + 1; j <= i; j++) { if (arr[j] == null) return null; s += arr[j]; }
+  return s / n;
+});
+
+function openStock(sym) {
+  const ch = data.charts || {}, x = data.crossovers || {};
+  const shortN = x.short || 20, longN = x.long || 50;
+  const raw = ch.closes && ch.closes[sym];
+  let dates = [], closes = [];
+  if (raw) raw.forEach((c, i) => { if (c != null) { dates.push(ch.dates[i]); closes.push(c); } });
+  stock = { sym, dates, closes, shortN, longN, s: avg(closes, shortN), l: avg(closes, longN) };
+  $("mLogo").innerHTML = badge(sym, "lg");
+  $("mName").textContent = sym;
+  const pos = data.positions.find(p => p.symbol === sym);
+  const sig = (x.signals || []).find(s => s.symbol === sym);
+  $("mSub").innerHTML = [pos ? '<span class="own">Owned</span>' : "", sig ? `<span class="side ${sig.signal.toLowerCase()}">${sig.signal === "BUY" ? "Buy" : "Sell"} signal ${shortDate(sig.date)}</span>` : ""].join(" ") || "Daily closing prices";
+  const last = closes[closes.length - 1], prev = closes[closes.length - 2];
+  $("mPrice").innerHTML = last == null ? "" : `<b>${money(last)}</b>${prev ? `<span class="${cls(last - prev)}">${pct((last / prev - 1) * 100)}</span> <span class="sub">last day</span>` : ""}`;
+  $("mLegend").innerHTML = `<span><i style="background:var(--blue)"></i>Price</span><span><i style="background:var(--ma1)"></i>${shortN}-day average</span>
+    <span><i style="background:var(--ma2)"></i>${longN}-day average</span><span><i class="mk"></i>Crossover</span>`;
+  const facts = [];
+  if (pos) facts.push(["Shares", qty(pos.qty)], ["Avg cost", money(pos.avg_entry)], ["Value", money(pos.market_value)],
+                      ["Return", `<span class="${cls(pos.pl_pct)}">${money(pos.pl, true)} (${pctText(pos.pl_pct)})</span>`]);
+  const sN = stock.s[stock.s.length - 1], lN = stock.l[stock.l.length - 1];
+  if (sN != null && lN != null) facts.push([`${shortN}-day avg`, money(sN)], [`${longN}-day avg`, money(lN)],
+    ["Trend", sN > lN ? `<span class="gain">${shortN}-day above ${longN}-day</span>` : `<span class="loss">${shortN}-day below ${longN}-day</span>`]);
+  $("mFacts").innerHTML = facts.map(([k, v]) => `<div class="fact"><div class="k">${k}</div><div class="v num">${v}</div></div>`).join("");
+  $("modal").classList.remove("hidden");
+  document.body.classList.add("noscroll");
+  drawStock();
+}
+
+function closeStock() {
+  $("modal").classList.add("hidden");
+  document.body.classList.remove("noscroll");
+}
+
+function drawStock() {
+  const el = $("mChart"), tip = $("mTip");
+  el.querySelector("svg")?.remove();
+  if (!stock || stock.closes.length < 2) {
+    el.insertAdjacentHTML("afterbegin", `<svg><text x="50%" y="50%" text-anchor="middle" class="axis">No price history for this stock yet</text></svg>`);
+    return;
+  }
+  const n = Math.min(stockDays, stock.closes.length), from = stock.closes.length - n;
+  const D = stock.dates.slice(from), P = stock.closes.slice(from), S = stock.s.slice(from), Lg = stock.l.slice(from);
+  const W = el.clientWidth, H = el.clientHeight, L = 60, R = 12, T = 12, B = 26;
+  if (W < 200) return;
+  const vals = [...P, ...S, ...Lg].filter(v => v != null);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = (hi - lo) * 0.08 || hi * 0.01 || 1; lo -= pad; hi += pad;
+  const x = i => L + i / (n - 1) * (W - L - R);
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const path = arr => arr.map((v, i) => v == null ? "" : `${i && arr[i - 1] != null ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const yt = [...Array(5)].map((_, i) => lo + (hi - lo) * i / 4);
+  const xt = [...Array(5)].map((_, i) => Math.round((n - 1) * i / 4));
+  const marks = [];
+  for (let i = 1; i < n; i++) {
+    const a = S[i - 1] != null && Lg[i - 1] != null ? S[i - 1] - Lg[i - 1] : null, b = S[i] != null && Lg[i] != null ? S[i] - Lg[i] : null;
+    if (a == null || b == null) continue;
+    if (a <= 0 && b > 0) marks.push([i, "up"]);
+    if (a >= 0 && b < 0) marks.push([i, "down"]);
+  }
+  const tri = (i, dir) => {
+    const cx = x(i), cy = y(S[i]) + (dir === "up" ? 14 : -14), k = dir === "up" ? 1 : -1;
+    return `<path d="M${cx},${cy - 6 * k}L${cx - 6},${cy + 5 * k}L${cx + 6},${cy + 5 * k}Z" fill="var(--${dir === "up" ? "gain" : "loss"})" stroke="var(--surface)" stroke-width="1.5"/>`;
+  };
+  el.insertAdjacentHTML("afterbegin", `<svg role="img" aria-label="${esc(stock.sym)} price chart">
+    <defs><linearGradient id="sfill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--blue-2)" stop-opacity=".18"/><stop offset="1" stop-color="var(--blue-2)" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>
+      <text class="axis" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">$${v >= 100 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2)}</text>`).join("")}
+    ${xt.map((i, k) => `<text class="axis" x="${x(i)}" y="${H - 6}" text-anchor="${k === 0 ? "start" : k === 4 ? "end" : "middle"}">${shortDate(D[i])}</text>`).join("")}
+    <path d="${path(P)}L${x(n - 1)},${H - B}L${x(0)},${H - B}Z" fill="url(#sfill)"/>
+    <path d="${path(Lg)}" fill="none" stroke="var(--ma2)" stroke-width="1.75" stroke-linejoin="round"/>
+    <path d="${path(S)}" fill="none" stroke="var(--ma1)" stroke-width="1.75" stroke-linejoin="round"/>
+    <path d="${path(P)}" fill="none" stroke="var(--blue)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>
+    ${marks.map(([i, d]) => tri(i, d)).join("")}
+    <line id="mCross" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>
+    <circle id="mDot" r="5" fill="var(--blue)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="mHit"/>
+  </svg>`);
+  const svg = el.querySelector("svg"), cross = svg.querySelector("#mCross"), dot = svg.querySelector("#mDot");
+  const hit = svg.querySelector("#mHit");
+  hit.addEventListener("pointermove", e => {
+    const mx = e.clientX - svg.getBoundingClientRect().left;
+    const i = Math.max(0, Math.min(n - 1, Math.round((mx - L) / (W - L - R) * (n - 1))));
+    const px = x(i), py = y(P[i]);
+    cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", px); dot.setAttribute("cy", py); dot.setAttribute("visibility", "visible");
+    tip.innerHTML = `<b>${money(P[i])}</b> <span class="sub">${shortDate(D[i])}</span><br>
+      <span style="color:var(--ma1)">■</span> ${stock.shortN}-day ${money(S[i])}<br><span style="color:var(--ma2)">■</span> ${stock.longN}-day ${money(Lg[i])}`;
+    tip.style.display = "block";
+    tip.style.left = Math.min(px + 12, W - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(py - tip.offsetHeight - 10, 0) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); });
+}
+
 let currentRange = "daily";
 $("range").addEventListener("click", e => {
   const r = e.target.dataset.r;
@@ -387,7 +565,7 @@ $("range").addEventListener("click", e => {
   [...$("range").children].forEach(b => b.classList.toggle("on", b.dataset.r === r));
   drawChart(r);
 });
-addEventListener("resize", () => data && drawChart(currentRange));
+addEventListener("resize", () => { if (data) { drawChart(currentRange); if (!$("modal").classList.contains("hidden")) drawStock(); } });
 
 function drawChart(range) {
   const el = $("chart"), tip = $("tip");

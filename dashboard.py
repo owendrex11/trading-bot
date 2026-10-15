@@ -16,14 +16,17 @@ the DASHBOARD_PASSWORD secret and the page asks for that password before it show
 """
 import argparse
 import base64
+import hashlib
 import json
 import os
 import secrets
 import shutil
 from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
 from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import QueryOrderStatus
 from alpaca.trading.requests import GetOrdersRequest, GetPortfolioHistoryRequest
@@ -36,6 +39,11 @@ import crossover_bot as bot
 HERE = Path(__file__).parent
 PAGE = HERE / "dashboard" / "index.html"
 PBKDF2_ITERATIONS = 310_000  # the page reads this from data.json
+CHART_DAYS = 400               # calendar days of prices kept for each stock's chart (about a year of trading days)
+LOGO_SOURCES = [               # tried in order; BRK.B is written BRK-B
+    "https://financialmodelingprep.com/image-stock/{}.png",
+    "https://assets.parqet.com/logos/symbol/{}?format=png",
+]
 
 
 def num(x):
@@ -134,6 +142,43 @@ def crossover_scan(key, secret, held, lookback=5):
             "lookback": lookback, "as_of": as_of, "signals": signals}
 
 
+def price_history(symbols, key, secret):
+    """Daily closes for each stock's chart, on one shared list of dates (missing days are null)."""
+    closes = bot.get_all_closes(sorted(symbols), CHART_DAYS, key, secret)
+    day = lambda d: d.strftime("%Y-%m-%d")
+    dates = sorted({day(d) for c in closes.values() for d in c.index})
+    out = {}
+    for sym, c in closes.items():
+        by_day = {day(d): round(float(v), 2) for d, v in c.items()}
+        out[sym] = [by_day.get(d) for d in dates]
+    return {"dates": dates, "closes": out}
+
+
+def fetch_logos(symbols, folder, password):
+    """Save each company logo next to the page, so the page never asks a logo site for your tickers.
+
+    File names are scrambled with the password, so nobody can tell which stocks are shown by guessing names.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def one(sym):
+        for url in LOGO_SOURCES:
+            try:
+                r = requests.get(url.format(sym.replace(".", "-")), timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            except requests.RequestException:
+                continue
+            if r.ok and r.headers.get("content-type", "").startswith("image/") and len(r.content) > 200:
+                name = hashlib.sha256(f"{password}:{sym}".encode()).hexdigest()[:20] + ".png"
+                (folder / name).write_bytes(r.content)
+                return sym, name
+        return sym, None
+
+    with ThreadPoolExecutor(16) as pool:
+        logos = {sym: name for sym, name in pool.map(one, sorted(symbols)) if name}
+    print(f"Logos: found {len(logos)} of {len(symbols)}.")
+    return logos
+
+
 def build_data(client, key, secret):
     acct = client.get_account()
     positions = client.get_all_positions()
@@ -147,6 +192,14 @@ def build_data(client, key, secret):
     except Exception as e:
         print(f"Crossover scan failed: {e}")
         scan = {"error": str(e)}
+
+    shown = {p.symbol for p in positions} | {o.symbol for o in orders[-50:]} | {t["symbol"] for t in trades[-50:]}
+    shown |= {s["symbol"] for s in scan.get("signals", [])}
+    try:
+        charts = price_history(shown, key, secret)
+    except Exception as e:
+        print(f"Chart prices failed: {e}")
+        charts = {"error": str(e)}
 
     equity, last_equity = float(acct.equity), float(acct.last_equity)
     start = daily[0]["equity"] if daily else equity
@@ -179,6 +232,8 @@ def build_data(client, key, secret):
         } for o in orders[::-1][:50]],
         "history": {"daily": daily, "intraday": intraday},
         "crossovers": scan,
+        "charts": charts,
+        "shown": sorted(shown),
     }
 
 
@@ -206,6 +261,11 @@ def main():
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     shutil.copy(PAGE, out / "index.html")
+    try:
+        data["logos"] = fetch_logos(data["shown"], out / "logos", password)
+    except Exception as e:
+        print(f"Logos failed: {e}")
+        data["logos"] = {}
     payload = {"encrypted": False, "data": data} if args.no_password else encrypt(data, password)
     (out / "data.json").write_text(json.dumps(payload))
     print("Dashboard built.")  # no account numbers here: run logs are public if the repository is
