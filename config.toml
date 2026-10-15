@@ -10,5 +10,5 @@ symbols = ["AAPL"]
 
 short_period = 20      # fast moving average, in trading days
 long_period = 50       # slow moving average, in trading days
-trade_size = 1         # shares per buy or sell (for each stock)
+position_dollars = 500 # dollars to spend on each buy, in whole shares (at least 1 share)
 history_days = 100     # how many days of price history to download

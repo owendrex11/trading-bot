@@ -14,10 +14,12 @@ environment variables (GitHub secrets), or from ~/.alpaca/alpaca.env on your own
 Rules:
 - BUY  when the short average moves from at/below the long average yesterday to above it today.
 - SELL when it moves from at/above yesterday to below it today.
-- A sell only happens if you already hold enough shares (so it never short-sells).
+- A buy is about position_dollars worth of whole shares (at least 1 share).
+- A sell sells every share you hold of that stock, and is skipped if you hold none (it never short-sells).
 - Each crossover is traded once: if an order on the same side was already placed today, it does nothing.
 """
 import argparse
+import math
 import os
 import tomllib
 from datetime import datetime, time, timedelta
@@ -211,7 +213,7 @@ def main():
             continue
         signals.append(f"{signal} {symbol}")
         try:
-            act_on_signal(client, symbol, signal, cfg["trade_size"], args.dry_run)
+            act_on_signal(client, symbol, signal, float(closes.iloc[-1]), cfg, args.dry_run)
         except Exception as e:  # one bad order shouldn't stop the others
             print(f"Error placing order for {symbol}: {e}")
             failed.append(symbol)
@@ -230,7 +232,15 @@ def main():
         raise SystemExit(1)
 
 
-def act_on_signal(client, symbol, signal, qty, dry_run):
+def buy_quantity(price, cfg):
+    """Whole shares worth about position_dollars; at least 1 share even if one share costs more."""
+    dollars = cfg.get("position_dollars")
+    if not dollars:
+        return cfg.get("trade_size", 1)  # older config files bought a fixed number of shares
+    return max(1, math.floor(dollars / price))
+
+
+def act_on_signal(client, symbol, signal, price, cfg, dry_run):
     print(f"Crossover found: {signal} signal.")
     side = OrderSide.BUY if signal == "BUY" else OrderSide.SELL
 
@@ -238,21 +248,25 @@ def act_on_signal(client, symbol, signal, qty, dry_run):
         print(f"Already placed a {signal} order for {symbol} today. No new order.")
         return
 
+    if signal == "BUY":
+        qty = buy_quantity(price, cfg)
+        what = f"{qty} {symbol} (about ${qty * price:,.2f} at ${price:,.2f})"
+    else:
+        try:
+            qty = float(client.get_open_position(symbol).qty)
+        except APIError:
+            qty = 0
+        if qty <= 0:
+            print(f"You don't hold any {symbol}. Skipping the sell (no short selling).")
+            return
+        what = f"all {qty:g} {symbol} you hold"
+
     if dry_run:
-        print(f"Dry run: would {signal} {qty} {symbol} at market. No order placed.")
+        print(f"Dry run: would {signal} {what} at market. No order placed.")
         return
 
-    if signal == "SELL":
-        try:
-            held = float(client.get_open_position(symbol).qty)
-        except APIError:
-            held = 0
-        if held < qty:
-            print(f"You hold {held:g} {symbol}, need {qty}. Skipping the sell (no short selling).")
-            return
-
     order = client.submit_order(MarketOrderRequest(symbol=symbol, qty=qty, side=side, time_in_force=TimeInForce.DAY))
-    print(f"Submitted: {order.side.value} {order.qty} {order.symbol} (market) status={order.status.value} id={order.id}")
+    print(f"Submitted: {order.side.value} {what} (market) status={order.status.value} id={order.id}")
 
 if __name__ == "__main__":
     main()
