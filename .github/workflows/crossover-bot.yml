@@ -1,0 +1,34 @@
+name: Crossover bot
+
+on:
+  schedule:
+    # Every 15 minutes, Monday to Friday, 13:00-21:45 UTC. That covers 9:30am-4pm Eastern in
+    # both summer and winter time; the bot itself skips any run when the market is closed.
+    - cron: "*/15 13-21 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check only, never place an order"
+        type: boolean
+        default: true
+
+concurrency:
+  group: crossover-bot
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Run bot
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            uv run --python 3.14 crossover_bot.py --dry-run
+          else
+            uv run --python 3.14 crossover_bot.py --market-hours-only
+          fi
