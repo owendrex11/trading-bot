@@ -1,7 +1,10 @@
-# Settings for crossover_bot.py. Change these, save, and run the bot again.
+# Settings for crossover_bot.py. Change these and save; the next run uses them.
 
-symbol = "AAPL"        # stock to trade
+# Stocks to check. Add more inside the brackets, each in quotes, separated by commas,
+# for example: symbols = ["AAPL", "MSFT", "NVDA"]
+symbols = ["AAPL"]
+
 short_period = 20      # fast moving average, in trading days
 long_period = 50       # slow moving average, in trading days
-trade_size = 1         # shares per buy or sell
+trade_size = 1         # shares per buy or sell (for each stock)
 history_days = 100     # how many days of price history to download

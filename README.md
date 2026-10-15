@@ -1,6 +1,6 @@
 # Crossover trading bot
 
-Buys or sells 1 share of AAPL on an Alpaca **paper** account when the 20-day moving average
+Buys or sells 1 share of each stock listed in `config.toml` (`symbols`) on an Alpaca **paper** account when the 20-day moving average
 crosses the 50-day. Settings are in `config.toml`.
 
 GitHub runs it every 15 minutes on weekdays while the market is open

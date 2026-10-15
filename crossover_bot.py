@@ -8,7 +8,7 @@
     uv run --python 3.14 crossover_bot.py --dry-run             # check only, never place an order
     uv run --python 3.14 crossover_bot.py --market-hours-only   # skip unless the market is open (used by the schedule)
 
-Settings live in config.toml. Keys come from the ALPACA_API_KEY / ALPACA_SECRET_KEY
+Settings live in config.toml (list as many symbols as you like). Keys come from the ALPACA_API_KEY / ALPACA_SECRET_KEY
 environment variables (GitHub secrets), or from ~/.alpaca/alpaca.env on your own PC.
 
 Rules:
@@ -55,6 +55,10 @@ def load_keys():
 
 def load_config():
     cfg = tomllib.loads(CONFIG_FILE.read_text())
+    if "symbols" not in cfg:
+        cfg["symbols"] = [cfg["symbol"]]  # older config files had a single symbol
+    if not cfg["symbols"]:
+        raise SystemExit("config.toml: symbols list is empty")
     if cfg["short_period"] >= cfg["long_period"]:
         raise SystemExit("config.toml: short_period must be smaller than long_period")
     if cfg["history_days"] < cfg["long_period"] + 1:
@@ -127,7 +131,20 @@ def main():
             return
 
     cfg = load_config()
-    symbol, short_n, long_n, qty = cfg["symbol"].upper(), cfg["short_period"], cfg["long_period"], cfg["trade_size"]
+    failed = []
+    for symbol in dict.fromkeys(sym.strip().upper() for sym in cfg["symbols"]):
+        print(f"\n=== {symbol} ===")
+        try:
+            check_symbol(client, symbol, cfg, key, secret, args.dry_run)
+        except (Exception, SystemExit) as e:  # one bad ticker shouldn't stop the others
+            print(f"Error checking {symbol}: {e}")
+            failed.append(symbol)
+    if failed:
+        raise SystemExit(f"\nCould not check: {', '.join(failed)}")
+
+
+def check_symbol(client, symbol, cfg, key, secret, dry_run):
+    short_n, long_n, qty = cfg["short_period"], cfg["long_period"], cfg["trade_size"]
 
     closes = get_closes(symbol, cfg["history_days"], key, secret)
     signal, d = find_signal(closes, short_n, long_n)
@@ -148,7 +165,7 @@ def main():
         print(f"Already placed a {signal} order for {symbol} today. No new order.")
         return
 
-    if args.dry_run:
+    if dry_run:
         print(f"Dry run: would {signal} {qty} {symbol} at market. No order placed.")
         return
 
