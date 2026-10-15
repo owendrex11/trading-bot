@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Trading Bot Portfolio</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --border: #e3e6eb; --grid: #eef0f3;
+    --text: #15181d; --text-2: #4b5563; --muted: #7b8494;
+    --accent: #2f6fdb; --gain: #12804a; --loss: #c8312b; --line: #2f6fdb; --area: rgba(47,111,219,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1216; --surface: #171b21; --border: #2a3039; --grid: #222831;
+      --text: #e8ebef; --text-2: #b3bac5; --muted: #868f9c;
+      --accent: #6b9bf0; --gain: #3fbf7f; --loss: #f0675f; --line: #6b9bf0; --area: rgba(107,155,240,.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1216; --surface: #171b21; --border: #2a3039; --grid: #222831;
+    --text: #e8ebef; --text-2: #b3bac5; --muted: #868f9c;
+    --accent: #6b9bf0; --gain: #3fbf7f; --loss: #f0675f; --line: #6b9bf0; --area: rgba(107,155,240,.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .kpi .label { color: var(--text-2); font-size: 13px; }
+  .kpi .value { font-size: 24px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi .note { font-size: 13px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .gain { color: var(--gain); } .loss { color: var(--loss); }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .row h2 { margin: 0; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; color: var(--text-2); padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .chart { position: relative; height: 260px; }
+  .chart svg { width: 100%; height: 100%; display: block; }
+  .chart .axis { fill: var(--muted); font-size: 11px; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+         padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; display: none; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-2); font-weight: 500; font-size: 13px; }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .empty { color: var(--muted); padding: 12px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+  .grid2 .card { margin-bottom: 0; min-width: 0; }
+  #lock { max-width: 360px; margin: 12vh auto; text-align: center; }
+  #lock input { width: 100%; padding: 10px 12px; font: inherit; border-radius: 8px; border: 1px solid var(--border);
+                background: var(--surface); color: var(--text); margin: 12px 0 8px; }
+  #lock button, .btn { width: 100%; padding: 10px; font: inherit; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+  #lock label { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--text-2); font-size: 13px; margin-top: 10px; }
+  #lock .err { color: var(--loss); font-size: 13px; min-height: 18px; }
+  .link { background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
+  .hidden { display: none; }
+  .nw { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <form id="lock" class="card hidden">
+    <h1>Trading Bot Portfolio</h1>
+    <p class="sub">Enter your dashboard password.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
+    <div class="err" id="err"></div>
+    <button type="submit">Unlock</button>
+    <label><input type="checkbox" id="remember" checked style="width:auto;margin:0"> Remember on this device</label>
+  </form>
+
+  <div id="app" class="hidden">
+    <header>
+      <div>
+        <h1>Trading Bot Portfolio</h1>
+        <div class="sub">Alpaca paper account · <span id="updated"></span></div>
+      </div>
+      <button class="link" id="logout">Lock</button>
+    </header>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="card">
+      <div class="row">
+        <h2>Portfolio value</h2>
+        <div class="seg" id="range">
+          <button data-r="intraday">Today</button><button data-r="month">1M</button><button data-r="daily" class="on">All</button>
+        </div>
+      </div>
+      <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+    </section>
+
+    <section class="card">
+      <h2>Holdings</h2>
+      <div class="table-wrap" id="positions"></div>
+    </section>
+
+    <div class="grid2">
+      <section class="card">
+        <h2>Finished trades</h2>
+        <div class="table-wrap" id="trades"></div>
+      </section>
+      <section class="card">
+        <h2>Recent orders</h2>
+        <div class="table-wrap" id="orders"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+const STORE = "dashboard-password";
+const $ = id => document.getElementById(id);
+const store = {
+  get() { try { return localStorage.getItem(STORE); } catch { return null; } },
+  set(v) { try { localStorage.setItem(STORE, v); } catch {} },
+  clear() { try { localStorage.removeItem(STORE); } catch {} },
+};
+
+const money = (v, sign) => v == null ? "–" : '<span class="nw">' +
+  (sign && v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</span>";
+const pct = v => v == null ? "–" : '<span class="nw">' + (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2) + "%</span>";
+const cls = v => v == null || v === 0 ? "" : v > 0 ? "gain" : "loss";
+const qty = v => Number(v).toLocaleString("en-US", { maximumFractionDigits: 4 });
+const date = s => new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+const dateTime = s => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(payload, password) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt: b64(payload.salt), iterations: payload.iterations },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(payload.iv) }, key, b64(payload.data));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+let payload, data;
+
+async function start() {
+  try {
+    const r = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
+    payload = await r.json();
+  } catch (e) {
+    document.querySelector("main").innerHTML = '<div class="card">Could not load the portfolio data yet. The next bot run will create it.</div>';
+    return;
+  }
+  if (!payload.encrypted) return show(payload.data);
+  const saved = store.get();
+  if (saved) {
+    try { return show(await decrypt(payload, saved)); } catch { store.clear(); }
+  }
+  $("lock").classList.remove("hidden");
+  $("pw").focus();
+}
+
+$("lock").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("err").textContent = "Unlocking…";
+  try {
+    const d = await decrypt(payload, $("pw").value);
+    if ($("remember").checked) store.set($("pw").value);
+    $("lock").classList.add("hidden");
+    show(d);
+  } catch { $("err").textContent = "That password didn't work."; }
+});
+$("logout").addEventListener("click", () => { store.clear(); location.reload(); });
+
+function kpi(label, value, note, valueCls = "") {
+  return `<div class="kpi"><div class="label">${label}</div><div class="value ${valueCls}">${value}</div><div class="note">${note}</div></div>`;
+}
+
+function show(d) {
+  data = d;
+  $("app").classList.remove("hidden");
+  $("updated").textContent = "updated " + dateTime(d.updated);
+  const a = d.account, t = d.trades;
+  const today = a.equity - a.last_equity, todayPct = a.last_equity ? today / a.last_equity * 100 : null;
+  const total = a.equity - a.start_equity, totalPct = a.start_equity ? total / a.start_equity * 100 : null;
+  const unreal = d.positions.reduce((s, p) => s + (p.pl || 0), 0);
+  const winRate = t.count ? t.wins / t.count * 100 : null;
+  $("kpis").innerHTML = [
+    kpi("Portfolio balance", money(a.equity), `Cash ${money(a.cash)}`),
+    kpi("Overall gain/loss", pct(totalPct), `${money(total, true)} since ${a.start_date ? date(a.start_date) : "start"}`, cls(total)),
+    kpi("Today", pct(todayPct), money(today, true), cls(today)),
+    kpi("Open positions", d.positions.length, `${money(a.long_market_value)} invested · ${money(unreal, true)} unrealized`),
+    kpi("Win rate", winRate == null ? "–" : winRate.toFixed(0) + "%",
+        t.count ? `${t.wins} won · ${t.losses} lost of ${t.count} finished` : "No finished trades yet"),
+    kpi("Realized gain/loss", money(t.realized_pl, true),
+        `Avg win ${pct(t.avg_win_pct)} · avg loss ${pct(t.avg_loss_pct)}`, cls(t.realized_pl)),
+  ].join("");
+
+  $("positions").innerHTML = d.positions.length ? `<table>
+    <thead><tr><th>Stock</th><th>Shares</th><th>Avg cost</th><th>Price</th><th>Value</th><th>Gain/loss</th><th>Gain/loss %</th><th>Today</th></tr></thead>
+    <tbody>${d.positions.map(p => `<tr>
+      <td><b>${esc(p.symbol)}</b></td><td>${qty(p.qty)}</td><td>${money(p.avg_entry)}</td><td>${money(p.price)}</td>
+      <td>${money(p.market_value)}</td><td class="${cls(p.pl)}">${money(p.pl, true)}</td>
+      <td class="${cls(p.pl_pct)}">${pct(p.pl_pct)}</td><td class="${cls(p.today_pct)}">${pct(p.today_pct)}</td></tr>`).join("")}</tbody>
+  </table>` : '<div class="empty">No stocks held right now.</div>';
+
+  $("trades").innerHTML = t.recent.length ? `<table>
+    <thead><tr><th>Stock</th><th>Sold</th><th>Bought at</th><th>Sold at</th><th>Gain/loss</th></tr></thead>
+    <tbody>${t.recent.map(x => `<tr>
+      <td><b>${esc(x.symbol)}</b> <span class="sub">×${qty(x.qty)}</span></td><td>${date(x.closed)}</td>
+      <td>${money(x.buy_price)}</td><td>${money(x.sell_price)}</td>
+      <td class="${cls(x.pl)}">${pct(x.pl_pct)}</td></tr>`).join("")}</tbody>
+  </table>` : '<div class="empty">A trade counts here once the bot sells shares it bought. None yet.</div>';
+
+  $("orders").innerHTML = d.orders.length ? `<table>
+    <thead><tr><th>Stock</th><th>Side</th><th>Shares</th><th>Price</th><th>When</th></tr></thead>
+    <tbody>${d.orders.map(o => `<tr>
+      <td><b>${esc(o.symbol)}</b></td><td class="${o.side === "buy" ? "gain" : "loss"}">${o.side === "buy" ? "Buy" : "Sell"}</td>
+      <td>${qty(o.qty)}</td><td>${money(o.price)}</td><td>${dateTime(o.time)}</td></tr>`).join("")}</tbody>
+  </table>` : '<div class="empty">No filled orders yet.</div>';
+
+  drawChart(currentRange);
+}
+
+let currentRange = "daily";
+$("range").addEventListener("click", e => {
+  const r = e.target.dataset.r;
+  if (!r) return;
+  currentRange = r;
+  [...$("range").children].forEach(b => b.classList.toggle("on", b.dataset.r === r));
+  drawChart(r);
+});
+addEventListener("resize", () => data && drawChart(currentRange));
+
+function drawChart(range) {
+  const el = $("chart"), tip = $("tip");
+  el.querySelector("svg")?.remove();
+  let pts = range === "intraday" ? data.history.intraday : data.history.daily;
+  if (range === "month") pts = pts.filter(p => p.t >= Date.now() / 1000 - 31 * 86400);
+  if (pts.length < 2) {
+    el.insertAdjacentHTML("afterbegin", `<svg><text x="50%" y="50%" text-anchor="middle" class="axis">Not enough history yet</text></svg>`);
+    return;
+  }
+  const W = el.clientWidth, H = el.clientHeight, L = 64, R = 12, T = 12, B = 26;
+  if (W < 200) return;  // hidden or mid-resize
+  const ys = pts.map(p => p.equity);
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const pad = (hi - lo) * 0.1 || hi * 0.005 || 1; lo -= pad; hi += pad;
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+  const x = t => L + (t - t0) / (t1 - t0) * (W - L - R);
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const fmtT = range === "intraday"
+    ? t => new Date(t * 1000).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : t => new Date(t * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const ticks = 4, yt = [...Array(ticks + 1)].map((_, i) => lo + (hi - lo) * i / ticks);
+  const xt = [...Array(5)].map((_, i) => t0 + (t1 - t0) * i / 4);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.equity).toFixed(1)}`).join("");
+  const area = `${line}L${x(t1)},${H - B}L${x(t0)},${H - B}Z`;
+  el.insertAdjacentHTML("afterbegin", `<svg role="img" aria-label="Portfolio value over time">
+    ${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>
+      <text class="axis" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">$${Math.round(v).toLocaleString("en-US")}</text>`).join("")}
+    ${xt.map((t, i) => `<text class="axis" x="${x(t)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${fmtT(t)}</text>`).join("")}
+    <path d="${area}" fill="var(--area)"/>
+    <path d="${line}" fill="none" stroke="var(--line)" stroke-width="2" stroke-linejoin="round"/>
+    <line id="cross" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>
+    <circle id="dot" r="4" fill="var(--line)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="hit"/>
+  </svg>`);
+  const svg = el.querySelector("svg"), cross = svg.querySelector("#cross"), dot = svg.querySelector("#dot");
+  const hide = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
+  svg.querySelector("#hit").addEventListener("pointermove", e => {
+    const mx = e.clientX - svg.getBoundingClientRect().left;
+    const t = t0 + (mx - L) / (W - L - R) * (t1 - t0);
+    let p = pts[0];
+    for (const q of pts) if (Math.abs(q.t - t) < Math.abs(p.t - t)) p = q;
+    const px = x(p.t), py = y(p.equity), change = p.equity - pts[0].equity;
+    cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", px); dot.setAttribute("cy", py); dot.setAttribute("visibility", "visible");
+    tip.innerHTML = `<b>${money(p.equity)}</b><br><span class="sub">${range === "intraday" ? fmtT(p.t) : date(p.t * 1000)}</span>
+      <span class="${cls(change)}">${pct(change / pts[0].equity * 100)}</span>`;
+    tip.style.display = "block";
+    tip.style.left = Math.min(px + 12, W - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(py - tip.offsetHeight - 10, 0) + "px";
+  });
+  svg.querySelector("#hit").addEventListener("pointerleave", hide);
+}
+
+start();
+</script>
+</body>
+</html>

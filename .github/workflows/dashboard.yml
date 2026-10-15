@@ -1,0 +1,42 @@
+name: Dashboard
+
+# Rebuilds the portfolio website after every bot run, so it is never more than ~15 minutes old
+# while the market is open. It can also be run by hand: Actions > Dashboard > Run workflow.
+on:
+  workflow_run:
+    workflows: ["Crossover bot"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: dashboard
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          cache-dependency-glob: dashboard.py
+      - name: Build dashboard
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: uv run --python 3.14 dashboard.py --out site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v5
