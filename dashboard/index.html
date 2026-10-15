@@ -5,94 +5,187 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Trading Bot Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f7f9; --surface: #ffffff; --border: #e3e6eb; --grid: #eef0f3;
-    --text: #15181d; --text-2: #4b5563; --muted: #7b8494;
-    --accent: #2f6fdb; --gain: #12804a; --loss: #c8312b; --line: #2f6fdb; --area: rgba(47,111,219,.10);
+    --bg: #f3f6fb; --surface: #ffffff; --surface-2: #f7f9fd; --border: #e2e8f2; --grid: #edf1f7;
+    --text: #0f1b2d; --text-2: #4a5872; --muted: #7d8aa3;
+    --blue: #2563eb; --blue-2: #3b82f6; --blue-soft: #e8f0fe; --blue-ink: #1d4ed8;
+    --hero-1: #0b1f4d; --hero-2: #1e4fd8; --hero-3: #3b82f6;
+    --gain: #0f8a4f; --gain-soft: #e3f6ec; --loss: #d23a33; --loss-soft: #fdeaea;
+    --shadow: 0 1px 2px rgba(15,27,45,.04), 0 6px 20px rgba(15,27,45,.06);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0f1216; --surface: #171b21; --border: #2a3039; --grid: #222831;
-      --text: #e8ebef; --text-2: #b3bac5; --muted: #868f9c;
-      --accent: #6b9bf0; --gain: #3fbf7f; --loss: #f0675f; --line: #6b9bf0; --area: rgba(107,155,240,.14);
+      --bg: #0a0f1a; --surface: #111a2b; --surface-2: #0f1726; --border: #1f2b42; --grid: #1a2438;
+      --text: #e7edf7; --text-2: #aab6cc; --muted: #7b88a1;
+      --blue: #5b8cff; --blue-2: #7aa2ff; --blue-soft: #18284a; --blue-ink: #9bbaff;
+      --hero-1: #081633; --hero-2: #143a9e; --hero-3: #2563eb;
+      --gain: #3ccf86; --gain-soft: #0f2d20; --loss: #ff6b63; --loss-soft: #351717;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0f1216; --surface: #171b21; --border: #2a3039; --grid: #222831;
-    --text: #e8ebef; --text-2: #b3bac5; --muted: #868f9c;
-    --accent: #6b9bf0; --gain: #3fbf7f; --loss: #f0675f; --line: #6b9bf0; --area: rgba(107,155,240,.14);
+    --bg: #0a0f1a; --surface: #111a2b; --surface-2: #0f1726; --border: #1f2b42; --grid: #1a2438;
+    --text: #e7edf7; --text-2: #aab6cc; --muted: #7b88a1;
+    --blue: #5b8cff; --blue-2: #7aa2ff; --blue-soft: #18284a; --blue-ink: #9bbaff;
+    --hero-1: #081633; --hero-2: #143a9e; --hero-3: #2563eb;
+    --gain: #3ccf86; --gain-soft: #0f2d20; --loss: #ff6b63; --loss-soft: #351717;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
-  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
-  h1 { font-size: 22px; margin: 0; }
-  h2 { font-size: 16px; margin: 0 0 12px; }
-  .sub { color: var(--muted); font-size: 13px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
-  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .kpi .label { color: var(--text-2); font-size: 13px; }
-  .kpi .value { font-size: 24px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .kpi .note { font-size: 13px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+         font: 15px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  .num { font-variant-numeric: tabular-nums; }
+  .nw { white-space: nowrap; }
+  .hidden { display: none !important; }
   .gain { color: var(--gain); } .loss { color: var(--loss); }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-  .row h2 { margin: 0; }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .seg button { border: 0; background: transparent; color: var(--text-2); padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-  .seg button.on { background: var(--accent); color: #fff; }
-  .chart { position: relative; height: 260px; }
+  .sub { color: var(--muted); font-size: 13px; }
+
+  /* Hero */
+  .hero { background: radial-gradient(1200px 400px at 85% -20%, var(--hero-3), transparent 60%),
+                      linear-gradient(135deg, var(--hero-1), var(--hero-2));
+          color: #fff; padding: 28px 0 88px; position: relative; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; inset: auto -10% -60% auto; width: 520px; height: 520px; border-radius: 50%;
+                 background: radial-gradient(circle, rgba(255,255,255,.10), transparent 65%); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .2px; flex-wrap: wrap; }
+  .logo { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.14); display: grid; place-items: center;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px;
+          background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #7ee2a8; box-shadow: 0 0 0 3px rgba(126,226,168,.25); }
+  .ghost { background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 13px;
+           cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .ghost:hover { background: rgba(255,255,255,.2); }
+  .balance { margin-top: 28px; }
+  .balance .label { color: rgba(255,255,255,.72); font-size: 14px; }
+  .balance .big { font-size: clamp(34px, 7vw, 52px); font-weight: 700; letter-spacing: -1px; margin: 2px 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,.12); }
+  .chip.up { background: rgba(62,207,134,.2); color: #b6f5d3; }
+  .chip.down { background: rgba(255,107,99,.2); color: #ffd0cd; }
+  .updated { color: rgba(255,255,255,.65); font-size: 12px; margin-top: 14px; }
+
+  main.wrap { margin-top: -64px; padding-bottom: 48px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); min-width: 0; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 10px; }
+  h2::before { content: ""; width: 4px; height: 18px; border-radius: 4px; background: linear-gradient(var(--blue-2), var(--blue)); }
+  .count { font-size: 12px; font-weight: 600; color: var(--blue-ink); background: var(--blue-soft); padding: 2px 8px; border-radius: 999px; }
+
+  /* KPIs */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+  .kpi .top { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: 13px; font-weight: 500; }
+  .ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); flex: none; }
+  .ico svg { width: 16px; height: 16px; }
+  .kpi .value { font-size: 24px; font-weight: 700; margin-top: 10px; letter-spacing: -.3px; }
+  .kpi .note { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .bar { height: 6px; border-radius: 6px; background: var(--grid); margin-top: 10px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue-2), var(--blue)); }
+
+  /* Segmented control */
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: transparent; color: var(--text-2); padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 500;
+                border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: var(--blue); color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,.35); }
+
+  /* Chart */
+  .chart { position: relative; height: 280px; }
   .chart svg { width: 100%; height: 100%; display: block; }
   .chart .axis { fill: var(--muted); font-size: 11px; }
-  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-         padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; display: none; }
-  .table-wrap { overflow-x: auto; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+         padding: 8px 12px; font-size: 13px; box-shadow: var(--shadow); white-space: nowrap; display: none; z-index: 2; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 0 -4px; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-  th { color: var(--text-2); font-weight: 500; font-size: 13px; }
+  th, td { padding: 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
   th:first-child, td:first-child { text-align: left; }
   tbody tr:last-child td { border-bottom: 0; }
-  .empty { color: var(--muted); padding: 12px 0; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
-  .grid2 .card { margin-bottom: 0; min-width: 0; }
-  #lock { max-width: 360px; margin: 12vh auto; text-align: center; }
-  #lock input { width: 100%; padding: 10px 12px; font: inherit; border-radius: 8px; border: 1px solid var(--border);
-                background: var(--surface); color: var(--text); margin: 12px 0 8px; }
-  #lock button, .btn { width: 100%; padding: 10px; font: inherit; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
-  #lock label { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--text-2); font-size: 13px; margin-top: 10px; }
+  tbody tr:hover td { background: var(--surface-2); }
+  .tick { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .tick .badge { width: 30px; height: 30px; border-radius: 8px; background: var(--blue-soft); color: var(--blue-ink); display: grid;
+                 place-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: -.2px; }
+  .delta { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 13px; }
+  .delta.gain { background: var(--gain-soft); } .delta.loss { background: var(--loss-soft); }
+  .side { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+  .side.buy { color: var(--gain); background: var(--gain-soft); } .side.sell { color: var(--loss); background: var(--loss-soft); }
+  .own { font-size: 11px; font-weight: 600; color: var(--blue-ink); background: var(--blue-soft); padding: 1px 6px; border-radius: 5px; margin-left: 2px; }
+  .empty { color: var(--muted); padding: 18px 4px; text-align: center; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid2 .card { margin-bottom: 0; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Crossovers */
+  .breadth { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin-bottom: 16px;
+             background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .breadth .bar { flex: 1; min-width: 140px; margin: 0; height: 8px; }
+  .xgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .xcol { min-width: 0; }
+  @media (max-width: 820px) { .xgrid { grid-template-columns: 1fr; } }
+  .xcol h3 { font-size: 14px; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+
+  /* Lock */
+  .lock-page { min-height: 100vh; display: grid; place-items: center; padding: 16px;
+               background: radial-gradient(900px 500px at 80% 0%, var(--hero-3), transparent 60%), linear-gradient(135deg, var(--hero-1), var(--hero-2)); }
+  #lock { width: 100%; max-width: 380px; background: var(--surface); border-radius: 18px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; }
+  #lock .logo { margin: 0 auto 14px; width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, var(--blue-2), var(--blue)); color: #fff; }
+  #lock h1 { font-size: 20px; margin: 0 0 4px; }
+  #lock input[type=password] { width: 100%; padding: 11px 12px; font: inherit; border-radius: 10px; border: 1px solid var(--border);
+                               background: var(--surface-2); color: var(--text); margin: 16px 0 8px; outline: none; }
+  #lock input[type=password]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  #lock button { width: 100%; padding: 11px; font: inherit; font-weight: 600; border: 0; border-radius: 10px; color: #fff; cursor: pointer;
+                 background: linear-gradient(135deg, var(--blue-2), var(--blue)); box-shadow: 0 6px 16px rgba(37,99,235,.35); }
+  #lock label { display: flex; gap: 6px; justify-content: center; align-items: center; color: var(--text-2); font-size: 13px; margin-top: 12px; }
   #lock .err { color: var(--loss); font-size: 13px; min-height: 18px; }
-  .link { background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
-  .hidden { display: none; }
-  .nw { white-space: nowrap; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 8px 0 24px; }
 </style>
 </head>
 <body>
-<main>
-  <form id="lock" class="card hidden">
+<div id="lockPage" class="lock-page hidden">
+  <form id="lock">
+    <div class="logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
     <h1>Trading Bot Portfolio</h1>
-    <p class="sub">Enter your dashboard password.</p>
+    <div class="sub">Enter your dashboard password</div>
     <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
     <div class="err" id="err"></div>
     <button type="submit">Unlock</button>
-    <label><input type="checkbox" id="remember" checked style="width:auto;margin:0"> Remember on this device</label>
+    <label><input type="checkbox" id="remember" checked> Remember on this device</label>
   </form>
+</div>
 
-  <div id="app" class="hidden">
-    <header>
-      <div>
-        <h1>Trading Bot Portfolio</h1>
-        <div class="sub">Alpaca paper account · <span id="updated"></span></div>
+<div id="app" class="hidden">
+  <section class="hero">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+          Trading Bot
+          <span class="pill"><span class="dot"></span>Paper account</span>
+        </div>
+        <button class="ghost" id="logout">Lock</button>
       </div>
-      <button class="link" id="logout">Lock</button>
-    </header>
+      <div class="balance">
+        <div class="label">Portfolio balance</div>
+        <div class="big num" id="heroBalance"></div>
+        <div class="chips" id="heroChips"></div>
+        <div class="updated" id="updated"></div>
+      </div>
+    </div>
+  </section>
 
+  <main class="wrap">
     <section class="kpis" id="kpis"></section>
 
     <section class="card">
-      <div class="row">
+      <div class="card-head">
         <h2>Portfolio value</h2>
         <div class="seg" id="range">
           <button data-r="intraday">Today</button><button data-r="month">1M</button><button data-r="daily" class="on">All</button>
@@ -102,22 +195,28 @@
     </section>
 
     <section class="card">
-      <h2>Holdings</h2>
+      <div class="card-head"><h2>Holdings <span class="count" id="posCount"></span></h2></div>
       <div class="table-wrap" id="positions"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Crossover signals</h2><span class="sub" id="xMeta"></span></div>
+      <div id="crossovers"></div>
     </section>
 
     <div class="grid2">
       <section class="card">
-        <h2>Finished trades</h2>
+        <div class="card-head"><h2>Finished trades</h2></div>
         <div class="table-wrap" id="trades"></div>
       </section>
       <section class="card">
-        <h2>Recent orders</h2>
+        <div class="card-head"><h2>Recent orders</h2></div>
         <div class="table-wrap" id="orders"></div>
       </section>
     </div>
-  </div>
-</main>
+    <footer>Alpaca paper trading · not real money</footer>
+  </main>
+</div>
 
 <script>
 const STORE = "dashboard-password";
@@ -128,14 +227,30 @@ const store = {
   clear() { try { localStorage.removeItem(STORE); } catch {} },
 };
 
-const money = (v, sign) => v == null ? "–" : '<span class="nw">' +
-  (sign && v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</span>";
-const pct = v => v == null ? "–" : '<span class="nw">' + (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2) + "%</span>";
+const sign = v => v > 0 ? "+" : v < 0 ? "−" : "";
+const moneyText = (v, signed) => v == null ? "–" :
+  (signed ? sign(v) : v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pctText = v => v == null ? "–" : sign(v) + Math.abs(v).toFixed(2) + "%";
+const money = (v, signed) => `<span class="nw">${moneyText(v, signed)}</span>`;
+const pct = v => `<span class="nw">${pctText(v)}</span>`;
 const cls = v => v == null || v === 0 ? "" : v > 0 ? "gain" : "loss";
+const delta = (v, text) => `<span class="delta ${cls(v)} nw">${text}</span>`;
 const qty = v => Number(v).toLocaleString("en-US", { maximumFractionDigits: 4 });
 const date = s => new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+const shortDate = s => new Date(s + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const dateTime = s => new Date(s).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const tick = (sym, extra = "") => `<span class="tick"><span class="badge">${esc(sym.slice(0, 4))}</span>${esc(sym)}${extra}</span>`;
+
+const ICONS = {
+  trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  layers: '<path d="M12 2l10 6-10 6L2 8z"/><path d="M2 16l10 6 10-6"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  wallet: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M16 13h2"/><path d="M6 6V4h12v2"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+};
+const icon = name => `<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg></span>`;
 
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 async function decrypt(payload, password) {
@@ -154,7 +269,7 @@ async function start() {
     const r = await fetch("data.json?t=" + Date.now(), { cache: "no-store" });
     payload = await r.json();
   } catch (e) {
-    document.querySelector("main").innerHTML = '<div class="card">Could not load the portfolio data yet. The next bot run will create it.</div>';
+    document.body.innerHTML = '<div class="lock-page"><div id="lock">Could not load the portfolio data yet. The next bot run will create it.</div></div>';
     return;
   }
   if (!payload.encrypted) return show(payload.data);
@@ -162,7 +277,7 @@ async function start() {
   if (saved) {
     try { return show(await decrypt(payload, saved)); } catch { store.clear(); }
   }
-  $("lock").classList.remove("hidden");
+  $("lockPage").classList.remove("hidden");
   $("pw").focus();
 }
 
@@ -172,60 +287,96 @@ $("lock").addEventListener("submit", async e => {
   try {
     const d = await decrypt(payload, $("pw").value);
     if ($("remember").checked) store.set($("pw").value);
-    $("lock").classList.add("hidden");
+    $("lockPage").classList.add("hidden");
     show(d);
   } catch { $("err").textContent = "That password didn't work."; }
 });
 $("logout").addEventListener("click", () => { store.clear(); location.reload(); });
 
-function kpi(label, value, note, valueCls = "") {
-  return `<div class="kpi"><div class="label">${label}</div><div class="value ${valueCls}">${value}</div><div class="note">${note}</div></div>`;
+function kpi(ic, label, value, note, valueCls = "", extra = "") {
+  return `<div class="kpi"><div class="top">${icon(ic)}${label}</div><div class="value num ${valueCls}">${value}</div><div class="note num">${note}</div>${extra}</div>`;
 }
 
 function show(d) {
   data = d;
   $("app").classList.remove("hidden");
-  $("updated").textContent = "updated " + dateTime(d.updated);
   const a = d.account, t = d.trades;
   const today = a.equity - a.last_equity, todayPct = a.last_equity ? today / a.last_equity * 100 : null;
   const total = a.equity - a.start_equity, totalPct = a.start_equity ? total / a.start_equity * 100 : null;
   const unreal = d.positions.reduce((s, p) => s + (p.pl || 0), 0);
   const winRate = t.count ? t.wins / t.count * 100 : null;
+  const chip = (v, text) => `<span class="chip ${v > 0 ? "up" : v < 0 ? "down" : ""}">${text}</span>`;
+
+  $("heroBalance").textContent = moneyText(a.equity);
+  $("heroChips").innerHTML = chip(total, `${pctText(totalPct)} all time`) + chip(today, `${moneyText(today, true)} (${pctText(todayPct)}) today`);
+  $("updated").textContent = "Updated " + dateTime(d.updated);
+
   $("kpis").innerHTML = [
-    kpi("Portfolio balance", money(a.equity), `Cash ${money(a.cash)}`),
-    kpi("Overall gain/loss", pct(totalPct), `${money(total, true)} since ${a.start_date ? date(a.start_date) : "start"}`, cls(total)),
-    kpi("Today", pct(todayPct), money(today, true), cls(today)),
-    kpi("Open positions", d.positions.length, `${money(a.long_market_value)} invested · ${money(unreal, true)} unrealized`),
-    kpi("Win rate", winRate == null ? "–" : winRate.toFixed(0) + "%",
-        t.count ? `${t.wins} won · ${t.losses} lost of ${t.count} finished` : "No finished trades yet"),
-    kpi("Realized gain/loss", money(t.realized_pl, true),
+    kpi("trend", "Overall gain/loss", pct(totalPct), `${money(total, true)} since ${a.start_date ? date(a.start_date) : "start"}`, cls(total)),
+    kpi("sun", "Today", pct(todayPct), money(today, true), cls(today)),
+    kpi("layers", "Open positions", d.positions.length, `${money(a.long_market_value)} invested · ${money(unreal, true)} unrealized`),
+    kpi("target", "Win rate", winRate == null ? "–" : winRate.toFixed(0) + "%",
+        t.count ? `${t.wins} won · ${t.losses} lost of ${t.count}` : "No finished trades yet", "",
+        `<div class="bar"><span style="width:${winRate || 0}%"></span></div>`),
+    kpi("check", "Realized gain/loss", money(t.realized_pl, true),
         `Avg win ${pct(t.avg_win_pct)} · avg loss ${pct(t.avg_loss_pct)}`, cls(t.realized_pl)),
+    kpi("wallet", "Cash", money(a.cash), `Buying power ${money(a.buying_power)}`),
   ].join("");
 
+  $("posCount").textContent = d.positions.length;
   $("positions").innerHTML = d.positions.length ? `<table>
-    <thead><tr><th>Stock</th><th>Shares</th><th>Avg cost</th><th>Price</th><th>Value</th><th>Gain/loss</th><th>Gain/loss %</th><th>Today</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Shares</th><th>Avg cost</th><th>Price</th><th>Value</th><th>Gain/loss</th><th>Return</th><th>Today</th></tr></thead>
     <tbody>${d.positions.map(p => `<tr>
-      <td><b>${esc(p.symbol)}</b></td><td>${qty(p.qty)}</td><td>${money(p.avg_entry)}</td><td>${money(p.price)}</td>
+      <td>${tick(p.symbol)}</td><td>${qty(p.qty)}</td><td>${money(p.avg_entry)}</td><td>${money(p.price)}</td>
       <td>${money(p.market_value)}</td><td class="${cls(p.pl)}">${money(p.pl, true)}</td>
-      <td class="${cls(p.pl_pct)}">${pct(p.pl_pct)}</td><td class="${cls(p.today_pct)}">${pct(p.today_pct)}</td></tr>`).join("")}</tbody>
+      <td>${delta(p.pl_pct, pctText(p.pl_pct))}</td><td class="${cls(p.today_pct)}">${pct(p.today_pct)}</td></tr>`).join("")}</tbody>
   </table>` : '<div class="empty">No stocks held right now.</div>';
 
+  renderCrossovers(d.crossovers);
+
   $("trades").innerHTML = t.recent.length ? `<table>
-    <thead><tr><th>Stock</th><th>Sold</th><th>Bought at</th><th>Sold at</th><th>Gain/loss</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Sold</th><th>Bought</th><th>Sold at</th><th>Return</th></tr></thead>
     <tbody>${t.recent.map(x => `<tr>
-      <td><b>${esc(x.symbol)}</b> <span class="sub">×${qty(x.qty)}</span></td><td>${date(x.closed)}</td>
+      <td>${tick(x.symbol, ` <span class="sub">×${qty(x.qty)}</span>`)}</td><td>${date(x.closed)}</td>
       <td>${money(x.buy_price)}</td><td>${money(x.sell_price)}</td>
-      <td class="${cls(x.pl)}">${pct(x.pl_pct)}</td></tr>`).join("")}</tbody>
+      <td>${delta(x.pl_pct, pctText(x.pl_pct))}</td></tr>`).join("")}</tbody>
   </table>` : '<div class="empty">A trade counts here once the bot sells shares it bought. None yet.</div>';
 
   $("orders").innerHTML = d.orders.length ? `<table>
     <thead><tr><th>Stock</th><th>Side</th><th>Shares</th><th>Price</th><th>When</th></tr></thead>
     <tbody>${d.orders.map(o => `<tr>
-      <td><b>${esc(o.symbol)}</b></td><td class="${o.side === "buy" ? "gain" : "loss"}">${o.side === "buy" ? "Buy" : "Sell"}</td>
+      <td>${tick(o.symbol)}</td><td><span class="side ${o.side}">${o.side === "buy" ? "Buy" : "Sell"}</span></td>
       <td>${qty(o.qty)}</td><td>${money(o.price)}</td><td>${dateTime(o.time)}</td></tr>`).join("")}</tbody>
   </table>` : '<div class="empty">No filled orders yet.</div>';
 
   drawChart(currentRange);
+}
+
+function renderCrossovers(x) {
+  const el = $("crossovers");
+  if (!x) { el.innerHTML = '<div class="empty">Crossover signals appear after the next update.</div>'; return; }
+  if (x.error) { el.innerHTML = '<div class="empty">The price download failed on the last update, so signals are missing. It retries on the next run.</div>'; return; }
+  const ago = n => n === 0 ? "Latest day" : n === 1 ? "1 day ago" : `${n} days ago`;
+  $("xMeta").textContent = `${x.short}/${x.long}-day averages · ${x.universe}${x.as_of ? " · prices to " + shortDate(x.as_of) : ""}`;
+  const upPct = x.checked ? x.above / x.checked * 100 : 0;
+  const col = (side, label, rows) => `<div class="xcol">
+    <h3><span class="side ${side}">${label}</span> <span class="count">${rows.length}</span></h3>
+    ${rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Stock</th><th>Crossed</th><th>Price</th><th>${x.short}d vs ${x.long}d</th></tr></thead>
+      <tbody>${rows.map(s => `<tr>
+        <td>${tick(s.symbol, s.held ? '<span class="own">Owned</span>' : "")}</td>
+        <td title="${s.date}">${ago(s.days_ago)}</td><td>${money(s.close)}</td>
+        <td>${delta(s.gap_pct, pctText(s.gap_pct))}</td></tr>`).join("")}</tbody>
+    </table></div>` : `<div class="empty">None in the last ${x.lookback} trading days.</div>`}
+  </div>`;
+  el.innerHTML = `
+    <div class="breadth"><span><b>${x.above}</b> of ${x.checked} stocks have the ${x.short}-day above the ${x.long}-day</span>
+      <div class="bar"><span style="width:${upPct}%"></span></div><span class="num">${upPct.toFixed(0)}%</span></div>
+    <div class="xgrid">
+      ${col("buy", "Buy signals", x.signals.filter(s => s.signal === "BUY"))}
+      ${col("sell", "Sell signals", x.signals.filter(s => s.signal === "SELL"))}
+    </div>
+    <p class="sub" style="margin:12px 0 0">Stocks whose ${x.short}-day average crossed the ${x.long}-day in the last ${x.lookback} trading days. The bot buys on the day of a buy cross and only sells stocks it owns.</p>`;
 }
 
 let currentRange = "daily";
@@ -262,14 +413,19 @@ function drawChart(range) {
   const xt = [...Array(5)].map((_, i) => t0 + (t1 - t0) * i / 4);
   const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.equity).toFixed(1)}`).join("");
   const area = `${line}L${x(t1)},${H - B}L${x(t0)},${H - B}Z`;
+  const last = pts[pts.length - 1];
   el.insertAdjacentHTML("afterbegin", `<svg role="img" aria-label="Portfolio value over time">
+    <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--blue-2)" stop-opacity=".28"/><stop offset="1" stop-color="var(--blue-2)" stop-opacity="0"/>
+    </linearGradient></defs>
     ${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/>
       <text class="axis" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">$${Math.round(v).toLocaleString("en-US")}</text>`).join("")}
     ${xt.map((t, i) => `<text class="axis" x="${x(t)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === 4 ? "end" : "middle"}">${fmtT(t)}</text>`).join("")}
-    <path d="${area}" fill="var(--area)"/>
-    <path d="${line}" fill="none" stroke="var(--line)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${area}" fill="url(#fill)"/>
+    <path d="${line}" fill="none" stroke="var(--blue)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(last.t)}" cy="${y(last.equity)}" r="4" fill="var(--blue)" stroke="var(--surface)" stroke-width="2"/>
     <line id="cross" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>
-    <circle id="dot" r="4" fill="var(--line)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <circle id="dot" r="5" fill="var(--blue)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
     <rect x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent" id="hit"/>
   </svg>`);
   const svg = el.querySelector("svg"), cross = svg.querySelector("#cross"), dot = svg.querySelector("#dot");
