@@ -166,9 +166,7 @@ def main():
     shutil.copy(PAGE, out / "index.html")
     payload = {"encrypted": False, "data": data} if args.no_password else encrypt(data, password)
     (out / "data.json").write_text(json.dumps(payload))
-    a = data["account"]
-    print(f"Dashboard built: equity ${a['equity']:,.2f}, {len(data['positions'])} position(s), "
-          f"{data['trades']['count']} closed trade(s).")
+    print("Dashboard built.")  # no account numbers here: run logs are public if the repository is
 
 
 if __name__ == "__main__":
