@@ -29,5 +29,9 @@ and the page asks for it before showing anything. One-time setup:
 The page also lists the stocks whose 20-day average crossed the 50-day in the last 5 trading days. It runs the
 bot's own check with the same `config.toml` settings, but never places orders.
 
+Tap any stock on the page to open its price chart with the 20 and 50-day averages and crossover points.
+Company logos are downloaded during the build and saved next to the page, so viewing the dashboard
+never sends your tickers to a logo site.
+
 Win rate counts finished trades: each sell is matched with the oldest shares bought before it, and it is
 a win if it sold for more than it cost.
