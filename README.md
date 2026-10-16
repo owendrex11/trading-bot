@@ -1,7 +1,7 @@
 # Crossover trading bot
 
 On an Alpaca **paper** account, follows the 1000 largest US stocks by market cap (or your own list). When a stock's
-20-day moving average crosses above the 50-day it buys about $1,000 of it (`position_dollars`); when it crosses below,
+20-day moving average crosses above the 50-day it buys about $2,500 of it (`position_dollars`); when it crosses below,
 it sells all the shares held. Settings are in `config.toml`.
 
 GitHub runs it every 15 minutes on weekdays while the market is open
