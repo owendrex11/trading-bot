@@ -12,3 +12,7 @@ short_period = 20      # fast moving average, in trading days
 long_period = 50       # slow moving average, in trading days
 position_dollars = 2500 # dollars to spend on each buy, in whole shares (at least 1 share)
 history_days = 100     # how many days of price history to download
+
+# The scheduled runs only trade in the last this-many minutes of the trading day, when today's price is nearly
+# final. Earlier runs just wait (the dashboard still refreshes every 15 minutes). Set to 0 to trade on every run.
+trade_minutes_before_close = 45

@@ -3,7 +3,8 @@ name: Crossover bot
 on:
   schedule:
     # Every 15 minutes, Monday to Friday, 13:00-21:45 UTC. That covers 9:30am-4pm Eastern in
-    # both summer and winter time; the bot itself skips any run when the market is closed.
+    # both summer and winter time; the bot itself skips any run when the market is closed, and only trades
+    # in the last trade_minutes_before_close minutes (config.toml) so it uses nearly final daily prices.
     - cron: "*/15 13-21 * * 1-5"
   workflow_dispatch:
     inputs:
@@ -32,5 +33,5 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             uv run --python 3.14 crossover_bot.py --dry-run
           else
-            uv run --python 3.14 crossover_bot.py --market-hours-only
+            uv run --python 3.14 crossover_bot.py --near-close-only
           fi
