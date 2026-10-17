@@ -1,0 +1,22 @@
+name: Backtest
+
+# Replays the bot's rules over past years and compares them with buying SPY. It never trades.
+# Run it by hand: Actions > Backtest > Run workflow. The results table is on the run's summary page.
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "How many years back to test"
+        default: "10"
+  push:
+    paths: [backtest.py, .github/workflows/backtest.yml]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - name: Run backtest
+        run: uv run --python 3.14 --with pandas backtest.py --years "${{ inputs.years || '10' }}"

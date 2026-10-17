@@ -7,6 +7,7 @@
     uv run --python 3.14 crossover_bot.py                       # check and trade if there is a crossover
     uv run --python 3.14 crossover_bot.py --dry-run             # check only, never place an order
     uv run --python 3.14 crossover_bot.py --market-hours-only   # skip unless the market is open (used by the schedule)
+    uv run --python 3.14 crossover_bot.py --near-close-only     # also skip until shortly before the close (used by the schedule)
 
 Settings live in config.toml: either your own list of symbols, or the N largest US stocks by market cap. Keys come from the ALPACA_API_KEY / ALPACA_SECRET_KEY
 environment variables (GitHub secrets), or from ~/.alpaca/alpaca.env on your own PC.
@@ -17,6 +18,10 @@ Rules:
 - A buy is about position_dollars worth of whole shares (at least 1 share).
 - A sell sells every share you hold of that stock, and is skipped if you hold none (it never short-sells).
 - Each crossover is traded once: if an order on the same side was already placed today, it does nothing.
+- Stocks you already own are always checked for a sell, even if they are no longer in the top market cap list.
+- With --near-close-only it only trades in the last trade_minutes_before_close minutes of the trading day. The
+  averages use daily closing prices, and today's price is still moving earlier in the day, so a crossover seen in
+  the morning can be gone by 4pm. Close to the bell, today's price is nearly final.
 """
 import argparse
 import math
@@ -62,6 +67,7 @@ def load_config():
     if "symbols" not in cfg:
         cfg["symbols"] = [cfg["symbol"]]  # older config files had a single symbol
     cfg.setdefault("top_market_cap", 0)
+    cfg.setdefault("trade_minutes_before_close", 0)
     if not cfg["symbols"] and not cfg["top_market_cap"]:
         raise SystemExit("config.toml: symbols list is empty")
     if cfg["short_period"] >= cfg["long_period"]:
@@ -168,18 +174,26 @@ def main():
     p.add_argument("--dry-run", action="store_true", help="show the signal but never place an order")
     p.add_argument("--market-hours-only", action="store_true",
                    help="do nothing unless the stock market is open right now (holidays included)")
+    p.add_argument("--near-close-only", action="store_true",
+                   help="do nothing until trade_minutes_before_close minutes before today's close")
     args = p.parse_args()
 
     key, secret = load_keys()
     client = TradingClient(key, secret, paper=True)  # paper=True: never real money
 
-    if args.market_hours_only:
+    cfg = load_config()
+    if args.market_hours_only or args.near_close_only:
         clock = client.get_clock()
         if not clock.is_open:
             print(f"Market is closed. Next open: {clock.next_open.astimezone(EASTERN):%Y-%m-%d %H:%M} Eastern. Nothing to do.")
             return
-
-    cfg = load_config()
+        window = cfg["trade_minutes_before_close"]
+        if args.near_close_only and window:
+            starts = clock.next_close - timedelta(minutes=window)
+            if clock.timestamp < starts:
+                print(f"Waiting for today's prices to settle: trading starts at {starts.astimezone(EASTERN):%H:%M} Eastern,"
+                      f" {window} minutes before the close. Nothing to do yet.")
+                return
     top_n = cfg["top_market_cap"]
     symbols = None
     if top_n:
@@ -191,6 +205,12 @@ def main():
     if not symbols:
         top_n = 0
         symbols = list(dict.fromkeys(sym.strip().upper() for sym in cfg["symbols"]))
+    own_list = set(symbols)
+    held = [pos.symbol for pos in client.get_all_positions() if pos.asset_class.value == "us_equity"]
+    extra = [sym for sym in held if sym not in own_list]
+    if extra:  # e.g. a stock that has fallen out of the top market cap list since it was bought
+        print(f"Also checking {len(extra)} stock(s) you own that are not on the list, so they can still be sold: {', '.join(extra)}.")
+        symbols += extra
 
     short_n, long_n = cfg["short_period"], cfg["long_period"]
     all_closes = get_all_closes(symbols, cfg["history_days"], key, secret)
@@ -236,7 +256,7 @@ def main():
     print("\n" + summary)
     if os.environ.get("GITHUB_ACTIONS"):
         print(f"::notice title=Crossover bot::{summary}")  # shows on the run's summary page
-    if failed or (no_data and not top_n):  # with your own list, a missing ticker is probably a typo
+    if failed or (not top_n and own_list & set(no_data)):  # with your own list, a missing ticker is probably a typo
         raise SystemExit(1)
 
 

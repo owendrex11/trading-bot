@@ -5,7 +5,9 @@ On an Alpaca **paper** account, follows the 1000 largest US stocks by market cap
 it sells all the shares held. Settings are in `config.toml`.
 
 GitHub runs it every 15 minutes on weekdays while the market is open
-(`.github/workflows/crossover-bot.yml`). Each run's output is under the **Actions** tab.
+(`.github/workflows/crossover-bot.yml`), but it only trades in the last 45 minutes before the close
+(`trade_minutes_before_close`), when the day's price is nearly final. Earlier runs just wait. Stocks you own are
+always checked for a sell, even after they drop out of the top 1000. Each run's output is under the **Actions** tab.
 
 - To test by hand: Actions > Crossover bot > Run workflow (leave "Check only" ticked).
 - To pause it: Actions > Crossover bot > "..." > Disable workflow.
@@ -35,3 +37,9 @@ never sends your tickers to a logo site.
 
 Win rate counts finished trades: each sell is matched with the oldest shares bought before it, and it is
 a win if it sold for more than it cost.
+
+## Backtest
+
+`backtest.py` replays the bot's rules over the last 10 years and compares them with simply buying an S&P 500 fund
+(SPY), plus two possible extras: a 10% stop-loss, and only buying while the S&P 500 is above its 200-day average.
+Run it with Actions > Backtest > Run workflow; the results table is on the run's summary page. It never trades.
