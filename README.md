@@ -37,3 +37,9 @@ never sends your tickers to a logo site.
 
 Win rate counts finished trades: each sell is matched with the oldest shares bought before it, and it is
 a win if it sold for more than it cost.
+
+## Backtest
+
+`backtest.py` replays the bot's rules over the last 10 years and compares them with simply buying an S&P 500 fund
+(SPY), plus two possible extras: a 10% stop-loss, and only buying while the S&P 500 is above its 200-day average.
+Run it with Actions > Backtest > Run workflow; the results table is on the run's summary page. It never trades.
